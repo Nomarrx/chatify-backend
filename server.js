@@ -28,7 +28,7 @@ const io = new Server(httpServer, {
 
 // ── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '20mb' }));
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
@@ -38,6 +38,9 @@ app.use("/api/users", userRoutes);
 
 const groupRoutes = require("./routes/groupRoutes");
 app.use("/api/groups", groupRoutes);
+
+const storyRoutes = require("./routes/storyRoutes");
+app.use("/api/stories", storyRoutes);
 
 // Health check
 app.get("/", (req, res) => {
@@ -61,6 +64,16 @@ setInterval(async () => {
     console.error("Heartbeat cleanup error:", err);
   }
 }, 60 * 1000);
+
+// ── Expired story cleanup (runs hourly; TTL index also handles this) ─────────
+const Story = require("./models/Story");
+setInterval(async () => {
+  try {
+    await Story.deleteMany({ expiresAt: { $lt: new Date() } });
+  } catch (err) {
+    console.error("Story cleanup error:", err);
+  }
+}, 60 * 60 * 1000);
 
 // ── Start server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;

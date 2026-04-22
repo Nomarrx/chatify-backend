@@ -44,6 +44,27 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otpHash: {
+      type: String,
+      select: false,
+    },
+    otpExpiresAt: {
+      type: Date,
+      select: false,
+    },
+    otpAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    otpLastSentAt: {
+      type: Date,
+      select: false,
+    },
   },
   { timestamps: true }
 );
@@ -60,10 +81,14 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Don't send password in responses
+// Don't send password or OTP internals in responses
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;
+  delete user.otpHash;
+  delete user.otpExpiresAt;
+  delete user.otpAttempts;
+  delete user.otpLastSentAt;
   return user;
 };
 
